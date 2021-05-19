@@ -1,0 +1,12 @@
+<launch>
+    <arg name="bag_start" default="1"/>
+    <arg name="bag_durr" default="30"/>
+
+    <node pkg="calib_lidar_imu" type="calib_lidar_imu_node" name="calib_lidar_imu_node" output="screen">
+        <param name="/lidar_topic" value="/velodyne_points"/>
+        <param name="/imu_topic" value="/imu_data"/>
+        <param name="bag_start" type="double"   value="$(arg bag_start)"/>
+        <param name="bag_durr"  type="double"   value="$(arg bag_durr)"/>
+        <param name="/bag_file" value="/media/cc/64BE51E9BE51B470/DATA/own/curb-calib/2021-05-14-10-01-32.bag"/>
+    </node>
+</launch>
