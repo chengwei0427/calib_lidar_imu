@@ -14,22 +14,22 @@ CalibLidarIMU::CalibLidarIMU()
     : map_cloud_(new CloudT), last_cloud(new CloudT)
 {
     imu_buffer_.clear();
-    ndt_omp_ = ndtInit(0.5);
+    // registration_ = ndtInit(0.5);
 }
 
-pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr CalibLidarIMU::ndtInit(double ndt_resolution)
-{
-    auto ndt = pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr(
-        new pclomp::NormalDistributionsTransform<PointT, PointT>());
-    ndt->setResolution(ndt_resolution);
-    int avalib_cpus = omp_get_max_threads();
-    ndt->setNumThreads(avalib_cpus);
-    ndt->setNeighborhoodSearchMethod(pclomp::DIRECT7);
-    ndt->setTransformationEpsilon(1e-3);
-    ndt->setStepSize(0.01);
-    ndt->setMaximumIterations(60);
-    return ndt;
-}
+// pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr CalibLidarIMU::ndtInit(double ndt_resolution)
+// {
+//     auto ndt = pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr(
+//         new pclomp::NormalDistributionsTransform<PointT, PointT>());
+//     ndt->setResolution(ndt_resolution);
+//     int avalib_cpus = omp_get_max_threads();
+//     ndt->setNumThreads(avalib_cpus);
+//     ndt->setNeighborhoodSearchMethod(pclomp::DIRECT7);
+//     ndt->setTransformationEpsilon(1e-3);
+//     ndt->setStepSize(0.01);
+//     ndt->setMaximumIterations(60);
+//     return ndt;
+// }
 
 CalibLidarIMU::~CalibLidarIMU()
 {
@@ -48,7 +48,7 @@ void CalibLidarIMU::addLidarData(const LidarData &data)
         return;
     }
 
-    if (!ndt_omp_)
+    if (!registration_)
     {
         cout << "register no initialize !!!" << endl;
         return;
@@ -68,19 +68,19 @@ void CalibLidarIMU::addLidarData(const LidarData &data)
     if (map_cloud_->empty())
     {
         *map_cloud_ += *data.cloud;
-        ndt_omp_->setInputTarget(map_cloud_);
+        registration_->setInputTarget(map_cloud_);
     }
     else
     {
-        ndt_omp_->setInputSource(downed_cloud);
+        registration_->setInputSource(downed_cloud);
         CloudT::Ptr aligned(new CloudT);
-        ndt_omp_->align(*aligned, lidar_buffer_.back().gT.cast<float>());
-        if (!ndt_omp_->hasConverged())
+        registration_->align(*aligned, lidar_buffer_.back().gT.cast<float>());
+        if (!registration_->hasConverged())
         {
             cout << "register cant converge, please check initial value !!!" << endl;
             return;
         }
-        Eigen::Matrix4d pose_out = (ndt_omp_->getFinalTransformation()).cast<double>();
+        Eigen::Matrix4d pose_out = (registration_->getFinalTransformation()).cast<double>();
 
         frame.gT = pose_out;
         Eigen::Matrix4d last_T_l_m = lidar_buffer_.back().gT;
@@ -126,17 +126,17 @@ void CalibLidarIMU::addLidarData(const LidarData &data)
     else
     {
         // get transform between neighbor frames
-        ndt_omp_->setInputSource(downed_cloud);
-        ndt_omp_->setInputTarget(last_cloud);
+        registration_->setInputSource(downed_cloud);
+        registration_->setInputTarget(last_cloud);
         CloudT::Ptr aligned(new CloudT);
-        ndt_omp_->align(*aligned, Eigen::Matrix4f::Identity());
+        registration_->align(*aligned, Eigen::Matrix4f::Identity());
 
-        if (!ndt_omp_->hasConverged())
+        if (!registration_->hasConverged())
         {
             cout << "register cant converge, please check initial value !!!" << endl;
             return;
         }
-        Eigen::Matrix4d result_T = (ndt_omp_->getFinalTransformation()).cast<double>();
+        Eigen::Matrix4d result_T = (registration_->getFinalTransformation()).cast<double>();
 
         last_cloud = downed_cloud;
 
@@ -183,15 +183,15 @@ void CalibLidarIMU::updateKeyScan(const LidarFrame &frame)
         pcl::transformPointCloud(*frame.cloud, *scan_target, frame.gT);
         *map_cloud_ += *scan_target;
 
-        downsampleCloud(map_cloud_, scan_target, 0.2);
+        downsampleCloud(map_cloud_, scan_target, 0.1);
         map_cloud_ = scan_target;
-        ndt_omp_->setInputTarget(map_cloud_);
+        registration_->setInputTarget(map_cloud_);
     }
 }
 
 Eigen::Vector3d CalibLidarIMU::optimizeTwice()
 {
-    if (!ndt_omp_ || aligned_lidar_imu_buffer_.size() < 10)
+    if (!registration_ || aligned_lidar_imu_buffer_.size() < 10)
     {
         cout << "register no initialize OR no align data buffer !" << endl;
         return Eigen::Vector3d{0.0, 0.0, 0.0};
@@ -200,7 +200,7 @@ Eigen::Vector3d CalibLidarIMU::optimizeTwice()
     {
         map_cloud_.reset(new CloudT);
         *map_cloud_ += *aligned_lidar_imu_buffer_[0].first.cloud;
-        ndt_omp_->setInputTarget(map_cloud_);
+        registration_->setInputTarget(map_cloud_);
     }
 
     Eigen::Matrix3d R_i_sensor = aligned_lidar_imu_buffer_[0].first.gT.block<3, 3>(0, 0);
@@ -214,16 +214,16 @@ Eigen::Vector3d CalibLidarIMU::optimizeTwice()
         Eigen::Matrix4d R_j_sensor_predict = aligned_lidar_imu_buffer_[j].first.gT;
         R_j_sensor_predict.block<3, 3>(0, 0) = R_j_sensor_est;
 
-        ndt_omp_->setInputSource(aligned_lidar_imu_buffer_[j].first.cloud);
+        registration_->setInputSource(aligned_lidar_imu_buffer_[j].first.cloud);
         CloudT::Ptr aligned(new CloudT);
-        ndt_omp_->align(*aligned, R_j_sensor_predict.cast<float>());
-        if (!ndt_omp_->hasConverged())
+        registration_->align(*aligned, R_j_sensor_predict.cast<float>());
+        if (!registration_->hasConverged())
         {
             cout << "register cant converge, please check initial value !!!" << endl;
             return Eigen::Vector3d{0.0, 0.0, 0.0};
         }
 
-        Eigen::Matrix4d pose_out = (ndt_omp_->getFinalTransformation()).cast<double>();
+        Eigen::Matrix4d pose_out = (registration_->getFinalTransformation()).cast<double>();
         //  update aligned_lidar_imu_buffer_
         aligned_lidar_imu_buffer_[j].first.gT = pose_out;
         aligned_lidar_imu_buffer_[j].first.T = aligned_lidar_imu_buffer_[j - 1].first.gT.inverse() * pose_out;
@@ -234,9 +234,9 @@ Eigen::Vector3d CalibLidarIMU::optimizeTwice()
         pcl::transformPointCloud(*aligned_lidar_imu_buffer_[j].first.cloud, *scan_target, pose_out);
         *map_cloud_ += *scan_target;
 
-        downsampleCloud(map_cloud_, scan_target, 0.2);
+        downsampleCloud(map_cloud_, scan_target, 0.1);
         map_cloud_ = scan_target;
-        ndt_omp_->setInputTarget(map_cloud_);
+        registration_->setInputTarget(map_cloud_);
     }
     //  update corres
     if (corres.size() > 0)
@@ -244,13 +244,13 @@ Eigen::Vector3d CalibLidarIMU::optimizeTwice()
     for (size_t j = 1; j < aligned_lidar_imu_buffer_.size(); ++j)
     {
         Eigen::Quaterniond delta_qij_imu = aligned_lidar_imu_buffer_[j - 1].second.conjugate() * aligned_lidar_imu_buffer_[j].second;
-        delta_qij_imu.normalize();
+        // delta_qij_imu.normalize();
 
         Eigen::Matrix3d R_si_toS0 = aligned_lidar_imu_buffer_[j - 1].first.gT.topLeftCorner<3, 3>();
         Eigen::Matrix3d R_sj_toS0 = aligned_lidar_imu_buffer_[j].first.gT.topLeftCorner<3, 3>();
         Eigen::Matrix3d delta_ij_sensor = R_si_toS0.transpose() * R_sj_toS0;
         Eigen::Quaterniond delta_qij_sensor(delta_ij_sensor);
-        delta_qij_sensor.normalize();
+        // delta_qij_sensor.normalize();
 
         corres.push_back(std::move(std::pair<Eigen::Quaterniond, Eigen::Quaterniond>(delta_qij_sensor, delta_qij_imu)));
     }
@@ -333,13 +333,14 @@ Eigen::Vector3d CalibLidarIMU::calib(bool integration)
     for (size_t j = 1; j < aligned_lidar_imu_buffer_.size(); ++j)
     {
         Eigen::Quaterniond delta_qij_imu = aligned_lidar_imu_buffer_[j - 1].second.conjugate() * aligned_lidar_imu_buffer_[j].second;
-        delta_qij_imu.normalize();
+        // delta_qij_imu.normalize();
 
-        Eigen::Matrix3d R_si_toS0 = aligned_lidar_imu_buffer_[j - 1].first.gT.topLeftCorner<3, 3>();
-        Eigen::Matrix3d R_sj_toS0 = aligned_lidar_imu_buffer_[j].first.gT.topLeftCorner<3, 3>();
-        Eigen::Matrix3d delta_ij_sensor = R_si_toS0.transpose() * R_sj_toS0;
-        Eigen::Quaterniond delta_qij_sensor(delta_ij_sensor);
-        delta_qij_sensor.normalize();
+        Eigen::Quaterniond delta_qij_sensor = Eigen::Quaterniond(aligned_lidar_imu_buffer_[j].first.T.block<3, 3>(0, 0));
+        // Eigen::Matrix3d R_si_toS0 = aligned_lidar_imu_buffer_[j - 1].first.gT.topLeftCorner<3, 3>();
+        // Eigen::Matrix3d R_sj_toS0 = aligned_lidar_imu_buffer_[j].first.gT.topLeftCorner<3, 3>();
+        // Eigen::Matrix3d delta_ij_sensor = R_si_toS0.transpose() * R_sj_toS0;
+        // Eigen::Quaterniond delta_qij_sensor(delta_ij_sensor);
+        // delta_qij_sensor.normalize();
 
         corres.push_back(std::move(std::pair<Eigen::Quaterniond, Eigen::Quaterniond>(delta_qij_sensor, delta_qij_imu)));
     }

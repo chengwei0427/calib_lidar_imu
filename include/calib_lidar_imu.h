@@ -10,7 +10,9 @@
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
 //  ndt
-#include <pclomp/ndt_omp.h>
+#include <pcl/registration/registration.h>
+// #include <pclomp/ndt_omp.h>
+// #include <pclomp/gicp_omp.h>
 
 using namespace std;
 using PointT = pcl::PointXYZI;
@@ -67,12 +69,17 @@ public:
     //@brief: optimize again
     Eigen::Vector3d optimizeTwice();
 
+    void setRegistration(pcl::Registration<PointT, PointT>::Ptr reg)
+    {
+        registration_ = reg;
+    }
+
     void saveQuParam(std::string &file);
     void saveEulerParam(std::string &file);
     void loadQuParam(std::string &file);
 
 private:
-    pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr ndtInit(double ndt_resolution);
+    // pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr ndtInit(double ndt_resolution);
 
     void downsampleCloud(CloudT::Ptr in_cloud, CloudT::Ptr out_cloud, float leaf_size);
 
@@ -97,8 +104,9 @@ private:
     vector<pair<LidarFrame, Eigen::Quaterniond>> aligned_lidar_imu_buffer_; // aligned lidar frame and interpolated imu attitude at lidar stamp
     Eigen::Quaterniond q_ItoSensor;
 
-    CloudT::Ptr map_cloud_;                                                      // local map
-    pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr ndt_omp_{nullptr}; // register object
+    CloudT::Ptr map_cloud_; // local map
+    //pclomp::NormalDistributionsTransform<PointT, PointT>::Ptr ndt_omp_{nullptr}; // register object
+    pcl::Registration<PointT, PointT>::Ptr registration_;
 
     std::vector<std::pair<Eigen::Quaterniond, Eigen::Quaterniond>> corres;
 

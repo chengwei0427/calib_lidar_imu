@@ -5,7 +5,8 @@ project(calib_lidar_imu)
 # add_compile_options(-std=c++11)
 add_compile_options(-std=c++11)
 add_compile_options(-o3)
-set( CMAKE_CXX_FLAGS_RELEASE "-fpermissive -fPIC")
+set( CMAKE_CXX_FLAGS_RELEASE "-fpermissive -fPIC ")
+set(CMAKE_CXX_FLAGS "-O3  -w -fopenmp -pthread")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -22,6 +23,8 @@ find_package(catkin REQUIRED COMPONENTS
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(cmake_modules REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+# find_package(PCL REQUIRED)
 
 set(3RDPARTY_DIR ${PROJECT_SOURCE_DIR}/../../../workspace/3rdparty)
 set(PCL_INCLUDE_DIRS ${3RDPARTY_DIR}/pcl_1.9.1/include/pcl-1.9)
@@ -40,6 +43,7 @@ catkin_package(
 include_directories(
   include
   ${PROJECT_SOURCE_DIR}/../ndt_omp-master/include
+  ${PROJECT_SOURCE_DIR}/../fast_gicp-master/include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -50,12 +54,18 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-link_directories(${PROJECT_SOURCE_DIR}/../../devel/lib)
+link_directories(
+  ${PROJECT_SOURCE_DIR}/../../devel/lib
+  # ${PROJECT_SOURCE_DIR}/../fast_gicp-master/build
+  )
 
-add_library(calib_lidar_imu src/calib_lidar_imu.cpp)
-target_link_libraries(calib_lidar_imu ${catkin_LIBRARIES} ${PCL_LIBRARIES} ndt_omp)
+# add_library(calib_lidar_imu src/calib_lidar_imu.cpp src/registrations.cpp)
+# target_link_libraries(calib_lidar_imu ${catkin_LIBRARIES} ${PCL_LIBRARIES} ndt_omp fast_gicp)
 
-add_executable(calib_lidar_imu_node apps/calib_warp.cpp)
-target_link_libraries(calib_lidar_imu_node calib_lidar_imu)
+add_executable(calib_lidar_imu_node 
+                    apps/calib_warp.cpp
+                    src/calib_lidar_imu.cpp 
+                    src/registrations.cpp)
+target_link_libraries(calib_lidar_imu_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ndt_omp fast_gicp)
 
-add_executable(calib_sim apps/test_sim.cpp)
+# add_executable(calib_sim apps/test_sim.cpp)

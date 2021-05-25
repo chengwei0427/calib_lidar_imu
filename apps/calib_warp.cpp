@@ -11,6 +11,7 @@
 #include <time.h>
 //
 #include "calib_lidar_imu.h"
+#include "registrations.hpp"
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -48,12 +49,15 @@ int main(int argc, char **argv)
 
     // initialize caliber
     CalibLidarIMU caliber;
-    // {
-    //     std::string file = "/home/cc/sim_qua.txt";
-    //     caliber.loadQuParam(file);
-    //     caliber.solve();
-    //     return 0;
-    // }
+    {
+        // std::string file = "/home/cc/sim_qua.txt";
+        // caliber.loadQuParam(file);
+        // caliber.solve();
+        // return 0;
+    }
+
+    auto reg = select_registration_method(pnh);
+    caliber.setRegistration(reg);
 
 #if READ_BAGFILE
     // get local param
@@ -70,7 +74,7 @@ int main(int argc, char **argv)
     vector<string> topics;
     topics.push_back(lidar_topic);
     topics.push_back(imu_topic);
-#ifndef TIME_DURR
+#ifdef TIME_DURR
     rosbag::View view(bag, rosbag::TopicQuery(topics));
 #else
     rosbag::View view;
@@ -182,16 +186,22 @@ int main(int argc, char **argv)
     cout << "result euler[I2L] angle(RPY) : " << rpy_b2l[0] << " " << rpy_b2l[1] << " " << rpy_b2l[2] << endl;
     std::cout << " ------------------------------------------------- " << std::endl;
 
+    Eigen::Matrix3d rot_inv = rot.inverse();
+    Eigen::Vector3d eular = rot_inv.eulerAngles(2, 1, 0);
+    std::cout << "euler from eulerAngles(2,1,0): " << eular[2] << "  " << eular[1] << " " << eular[0] << std::endl;
+
+    std::cout << "\n------- opt twice --------" << std::endl;
     Eigen::Vector3d rpy_b2l_opt = caliber.optimizeTwice();
     cout << "result euler[I2L] angle(RPY) after opt : " << rpy_b2l_opt[0] << " " << rpy_b2l_opt[1] << " " << rpy_b2l_opt[2] << endl;
 
     std::string pcd2 = std::string(home_env_var) + "/calib_lidar2imu_map_after_opt.pcd";
     caliber.saveNDTmap(pcd2);
 
+    std::cout << "\n ------ load solve -----------" << std::endl;
     std::string file = "/home/cc/temp.txt";
     caliber.loadQuParam(file);
     caliber.solve();
-    std::cout << "\n\n";
+    std::cout << "\n ------ load solve iter -----------" << std::endl;
     caliber.loadQuParam(file);
     caliber.soveIter();
 

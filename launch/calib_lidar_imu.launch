@@ -8,5 +8,16 @@
         <param name="bag_start" type="double"   value="$(arg bag_start)"/>
         <param name="bag_durr"  type="double"   value="$(arg bag_durr)"/>
         <param name="/bag_file" value="/media/cc/64BE51E9BE51B470/DATA/own/curb-calib/2021-05-14-10-01-32.bag"/>
+        <!-- ICP, GICP, NDT, GICP_OMP, NDT_OMP, FAST_GICP(recommended), or FAST_VGICP -->
+        <param name="registration_method" value="GICP" />
+        <param name="reg_num_threads" value="6" />
+        <param name="reg_transformation_epsilon" value="0.001"/>
+        <param name="reg_maximum_iterations" value="64"/>
+        <param name="reg_max_correspondence_distance" value="2.5"/>
+        <param name="reg_max_optimizer_iterations" value="20"/>
+        <param name="reg_use_reciprocal_correspondences" value="false"/>
+        <param name="reg_correspondence_randomness" value="20"/>
+        <param name="reg_resolution" value="0.5" />
+        <param name="reg_nn_search_method" value="DIRECT7" />
     </node>
 </launch>
