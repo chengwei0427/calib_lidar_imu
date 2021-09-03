@@ -9,7 +9,7 @@
         <param name="bag_durr"  type="double"   value="$(arg bag_durr)"/>
         <param name="/bag_file" value="/media/cc/64BE51E9BE51B470/DATA/own/curb-calib/2021-05-14-10-01-32.bag"/>
         <!-- ICP, GICP, NDT, GICP_OMP, NDT_OMP, FAST_GICP(recommended), or FAST_VGICP -->
-        <param name="registration_method" value="GICP" />
+        <param name="registration_method" value="NDT_OMP" />
         <param name="reg_num_threads" value="6" />
         <param name="reg_transformation_epsilon" value="0.001"/>
         <param name="reg_maximum_iterations" value="64"/>

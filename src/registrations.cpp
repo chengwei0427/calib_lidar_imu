@@ -10,11 +10,13 @@
 
 #include <pclomp/ndt_omp.h>
 #include <pclomp/gicp_omp.h>
+#ifdef USE_FAST_GICP_
 #include <fast_gicp/gicp/fast_gicp.hpp>
 #include <fast_gicp/gicp/fast_vgicp.hpp>
 
 #ifdef USE_VGICP_CUDA
 #include <fast_gicp/gicp/fast_vgicp_cuda.hpp>
+#endif
 #endif
 
 // namespace hdl_graph_slam
@@ -25,7 +27,18 @@ boost::shared_ptr<pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>> select_regi
 
   // select a registration method (ICP, GICP, NDT)
   std::string registration_method = pnh.param<std::string>("registration_method", "NDT_OMP");
-  if (registration_method == "FAST_GICP")
+  if (registration_method == "ICP")
+  {
+    std::cout << "registration: ICP" << std::endl;
+    boost::shared_ptr<pcl::IterativeClosestPoint<PointT, PointT>> icp(new pcl::IterativeClosestPoint<PointT, PointT>());
+    icp->setTransformationEpsilon(pnh.param<double>("reg_transformation_epsilon", 0.01));
+    icp->setMaximumIterations(pnh.param<int>("reg_maximum_iterations", 64));
+    icp->setMaxCorrespondenceDistance(pnh.param<double>("reg_max_correspondence_distance", 2.5));
+    icp->setUseReciprocalCorrespondences(pnh.param<bool>("reg_use_reciprocal_correspondences", false));
+    return icp;
+  }
+#ifdef USE_FAST_GICP_
+  else if (registration_method == "FAST_GICP")
   {
     std::cout << "registration: FAST_GICP" << std::endl;
     boost::shared_ptr<fast_gicp::FastGICP<PointT, PointT>> gicp(new fast_gicp::FastGICP<PointT, PointT>());
@@ -36,6 +49,7 @@ boost::shared_ptr<pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>> select_regi
     gicp->setCorrespondenceRandomness(pnh.param<int>("reg_correspondence_randomness", 20));
     return gicp;
   }
+
 #ifdef USE_VGICP_CUDA
   else if (registration_method == "FAST_VGICP_CUDA")
   {
@@ -59,16 +73,8 @@ boost::shared_ptr<pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>> select_regi
     vgicp->setCorrespondenceRandomness(pnh.param<int>("reg_correspondence_randomness", 20));
     return vgicp;
   }
-  else if (registration_method == "ICP")
-  {
-    std::cout << "registration: ICP" << std::endl;
-    boost::shared_ptr<pcl::IterativeClosestPoint<PointT, PointT>> icp(new pcl::IterativeClosestPoint<PointT, PointT>());
-    icp->setTransformationEpsilon(pnh.param<double>("reg_transformation_epsilon", 0.01));
-    icp->setMaximumIterations(pnh.param<int>("reg_maximum_iterations", 64));
-    icp->setMaxCorrespondenceDistance(pnh.param<double>("reg_max_correspondence_distance", 2.5));
-    icp->setUseReciprocalCorrespondences(pnh.param<bool>("reg_use_reciprocal_correspondences", false));
-    return icp;
-  }
+#endif
+
   else if (registration_method.find("GICP") != std::string::npos)
   {
     if (registration_method.find("OMP") == std::string::npos)
