@@ -10,7 +10,6 @@ Linear Rotation Calibration about Lidar-Imu
 
 - Eigen
 
-- ndt_omp and fast_gicp (https://github.com/koide3)
 
 ## Build
 
