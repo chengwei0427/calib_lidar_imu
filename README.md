@@ -1,6 +1,6 @@
 # calib_lidar_imu
 Linear Rotation Calibration about Lidar-Imu
-
+![image](https://github.com/chengwei0427/calib_lidar_imu/blob/main/doc/flow.png)
 
 ## Dependencies
 
@@ -16,9 +16,7 @@ Linear Rotation Calibration about Lidar-Imu
 
 1. install and build ROS,PCL
 
-2. install ndt_omp and fast_gicp
-
-3. run
+2. run
 
    ```
    roslaunch calib_lidar_imu calib_lidar_imu.launch
