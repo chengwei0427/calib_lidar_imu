@@ -1,6 +1,6 @@
 # calib_lidar_imu
 Linear Rotation Calibration about Lidar-Imu
-![image](https://github.com/chengwei0427/calib_lidar_imu/blob/main/doc/flow.png)
+![alt text](https://github.com/chengwei0427/calib_lidar_imu/tree/main/doc/flow.png?raw=true)
 
 ## Dependencies
 
