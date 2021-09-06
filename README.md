@@ -10,10 +10,14 @@ Linear Rotation Calibration about Lidar-Imu
 
 - Eigen
 
+- Ceres
+
+- Gtsam
+
 
 ## Build
 
-1. install and build ROS,PCL
+1. install and build ROS,PCL,ceres,gtsam
 
 2. run
 
