@@ -352,9 +352,9 @@ Eigen::Vector3d CalibLidarIMU::calib(bool integration)
     saveQuParam(file);
     std::string euler_file = std::string(home_env_var) + "/euler.txt";
     // saveEulerParam(euler_file);
-    Eigen::Vector3d eular = solve();
+    // Eigen::Vector3d eular = solve();
 
-    solve_gtsam();
+    Eigen::Vector3d eular = solve_gtsam();
     return eular;
 }
 
@@ -389,7 +389,7 @@ Eigen::Vector3d CalibLidarIMU::solve_gtsam()
     std::cout << "Marginal Covariance" << std::endl;
     std::cout << marginals.marginalCovariance(R(0)) << std::endl;
 
-    return finalResult.matrix().eulerAngles(0, 1, 2);
+    return finalResult.matrix().eulerAngles(2, 1, 0);
 }
 
 Eigen::Vector3d CalibLidarIMU::soveIter()
