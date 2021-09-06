@@ -353,7 +353,43 @@ Eigen::Vector3d CalibLidarIMU::calib(bool integration)
     std::string euler_file = std::string(home_env_var) + "/euler.txt";
     // saveEulerParam(euler_file);
     Eigen::Vector3d eular = solve();
+
+    solve_gtsam();
     return eular;
+}
+
+Eigen::Vector3d CalibLidarIMU::solve_gtsam()
+{
+    for (int i = 0; i < corres.size(); i++)
+    {
+        Eigen::Quaterniond delta_qij_imu = corres[i].second;
+        Eigen::Quaterniond delta_qij_sensor = corres[i].first;
+        Eigen::Matrix3d deltaR_I(delta_qij_imu);
+        Eigen::Matrix3d deltaR_L(delta_qij_sensor);
+
+        Eigen::Vector3d axisAngle_lidar;
+        Eigen::Vector3d axisAngle_imu;
+        ceres::RotationMatrixToAngleAxis(deltaR_L.data(), axisAngle_lidar.data());
+        ceres::RotationMatrixToAngleAxis(deltaR_I.data(), axisAngle_imu.data());
+        /// GTSAM stuff
+        graph.add(boost::make_shared<HECFactor>(R(0), gtsam::Point3(axisAngle_imu.x(), axisAngle_imu.y(), axisAngle_imu.z()),
+                                                gtsam::Point3(axisAngle_lidar.x(), axisAngle_lidar.y(), axisAngle_lidar.z()), rotationNoise));
+        // std::cout << "Frame: " << i << " / " << corres.size() << std::endl;
+    }
+    gtsam::Rot3 priorRot = gtsam::Rot3::identity();
+    initial_values.insert(R(0), priorRot);
+    gtsam::Values result = gtsam::LevenbergMarquardtOptimizer(graph, initial_values).optimize();
+    gtsam::Rot3 finalResult = result.at<gtsam::Rot3>(R(0));
+    gtsam::Marginals marginals(graph, result);
+    std::cout << "------  solve by gtsam  -------" << std::endl;
+    std::cout << "Rot3: \n"
+              << std::endl;
+    std::cout << finalResult.matrix() << std::endl;
+    std::cout << "Euler Angles: " << finalResult.matrix().eulerAngles(2, 1, 0).transpose() * 180 / M_PI << std::endl;
+    std::cout << "Marginal Covariance" << std::endl;
+    std::cout << marginals.marginalCovariance(R(0)) << std::endl;
+
+    return finalResult.matrix().eulerAngles(0, 1, 2);
 }
 
 Eigen::Vector3d CalibLidarIMU::soveIter()

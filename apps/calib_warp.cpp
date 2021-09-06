@@ -183,12 +183,12 @@ int main(int argc, char **argv)
 
     Eigen::Matrix3d rot = Eigen::Matrix3d(Eigen::AngleAxisd(rpy_b2l[2], Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(rpy_b2l[1], Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(rpy_b2l[0], Eigen::Vector3d::UnitX()));
     std::cout << " ------------------------------------------------- " << std::endl;
-    cout << "result euler[I2L] angle(RPY) : " << rpy_b2l[0] << " " << rpy_b2l[1] << " " << rpy_b2l[2] << endl;
+    cout << "result euler[I2L] angle(RPY) : " << rpy_b2l[0] * 180 / M_PI << " " << rpy_b2l[1] * 180 / M_PI << " " << rpy_b2l[2] * 180 / M_PI << endl;
     std::cout << " ------------------------------------------------- " << std::endl;
 
     Eigen::Matrix3d rot_inv = rot.inverse();
     Eigen::Vector3d eular = rot_inv.eulerAngles(2, 1, 0);
-    std::cout << "euler from eulerAngles(2,1,0): " << eular[2] << "  " << eular[1] << " " << eular[0] << std::endl;
+    std::cout << "euler from eulerAngles(2,1,0): " << eular[2] * 180 / M_PI << "  " << eular[1] * 180 / M_PI << " " << eular[0] * 180 / M_PI << std::endl;
 
     std::cout << "\n------- opt twice --------" << std::endl;
     Eigen::Vector3d rpy_b2l_opt = caliber.optimizeTwice();
@@ -196,14 +196,6 @@ int main(int argc, char **argv)
 
     std::string pcd2 = std::string(home_env_var) + "/calib_lidar2imu_map_after_opt.pcd";
     caliber.saveNDTmap(pcd2);
-
-    std::cout << "\n ------ load solve -----------" << std::endl;
-    std::string file = "/home/cc/temp.txt";
-    caliber.loadQuParam(file);
-    caliber.solve();
-    std::cout << "\n ------ load solve iter -----------" << std::endl;
-    caliber.loadQuParam(file);
-    caliber.soveIter();
 
     return 0;
 }

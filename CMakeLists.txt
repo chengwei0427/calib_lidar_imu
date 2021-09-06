@@ -34,6 +34,12 @@ endif()
 find_package(cmake_modules REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+find_package(Ceres REQUIRED)
+# find_package(GTSAM REQUIRED)
+set(3RDPARTY_DIR /home/cc/workspace/3rdparty)
+set(GTSAM_INCLUDE_DIR ${3RDPARTY_DIR}/gtsam4/include)
+set(GTSAM_LIBRARY_DIRS ${3RDPARTY_DIR}/gtsam4/lib)
+
 # find_package(PCL REQUIRED)
 
 set(PCL_INCLUDE_DIRS /home/cc/workspace/3rdparty/pcl1.7.2/include/pcl-1.7)
@@ -62,6 +68,9 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
+link_directories(${GTSAM_LIBRARY_DIRS})
+include_directories(${GTSAM_INCLUDE_DIR} ${CERES_INCLUDE_DIRS})
+
 
 # add_library(calib_lidar_imu src/calib_lidar_imu.cpp src/registrations.cpp)
 # target_link_libraries(calib_lidar_imu ${catkin_LIBRARIES} ${PCL_LIBRARIES} ndt_omp fast_gicp)
@@ -77,6 +86,6 @@ add_executable(calib_lidar_imu_node
                     thirdparty/pclomp/voxel_grid_covariance_omp.cpp
                     thirdparty/pclomp/ndt_omp.cpp
                     thirdparty/pclomp/gicp_omp.cpp)
-target_link_libraries(calib_lidar_imu_node ${catkin_LIBRARIES} ${PCL_LIBRARIES}  )
+target_link_libraries(calib_lidar_imu_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} libgtsam.so)
 
 add_executable(calib_sim apps/test_sim.cpp)
