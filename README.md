@@ -26,10 +26,17 @@ Linear Rotation Calibration about Lidar-Imu
    ```
 
 ## calib result
-![image](https://github.com/chengwei0427/calib_lidar_imu/blob/main/doc/res.png)
+<p align='center'>
+    <img src="./doc/res.png" alt="drawing" width="800"/>
+</p>
 
+<p align='center'>
+    <img src="./doc/cloud_map.png" alt="drawing" width="800"/>
+</p>
 
-![image](https://github.com/chengwei0427/calib_lidar_imu/blob/main/doc/cloud_map.png)
+## TODO
 
+  - [ ]	Use scan-to-map[like loam] to solve lidar odometry pose instead of icp/ndt.
+  - [ ]	Use preintegration to solve the imu pose.
 ## reference
 [https://blog.csdn.net/u012700322/article/details/117021836]
